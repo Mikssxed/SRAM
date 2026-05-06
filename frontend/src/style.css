@@ -1,0 +1,192 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-bg-base: #0b1220;
+  --color-bg-elevated: #0f1a2e;
+  --color-surface: #142036;
+  --color-surface-alt: #1a2942;
+  --color-edge: #22324f;
+  --color-content: #e8eef9;
+  --color-content-dim: #8a9ab5;
+  --color-content-mute: #5a6b87;
+  --color-live-green: #3ddc84;
+  --color-live-green-deep: #1ea968;
+  --color-live-red: #ff5a4e;
+  --color-live-red-deep: #c8362a;
+  --color-amber: #ffb547;
+  --color-teal: #3ec9d6;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --shadow-glow-green: 0 0 10px var(--color-live-green);
+  --shadow-glow-teal: 0 0 8px var(--color-teal);
+  --shadow-glow-red: 0 0 10px var(--color-live-red);
+  --shadow-glow-amber: 0 0 10px var(--color-amber);
+  --shadow-glow-amber-lg: 0 0 40px -10px
+    color-mix(in srgb, var(--color-amber) 53%, transparent);
+  --shadow-drop-amber: 0 12px 30px -8px
+    color-mix(in srgb, var(--color-amber) 53%, transparent);
+  --shadow-card-red: 0 30px 60px -30px
+    color-mix(in srgb, var(--color-live-red) 20%, transparent);
+  --shadow-card-green: 0 30px 60px -30px
+    color-mix(in srgb, var(--color-live-green) 20%, transparent);
+  --shadow-header:
+    0 0 0 1px var(--color-edge),
+    0 8px 24px -8px color-mix(in srgb, var(--color-live-green) 33%, transparent);
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.4);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+body {
+  margin: 0;
+  background: #0b1220;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+.animate-toast-in {
+  animation: toast-in 0.3s ease-out forwards;
+}
+
+.hazard-stripes {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--color-amber) 0 22px,
+    transparent 22px 44px
+  );
+}
+
+.glow-gradient-red {
+  background: radial-gradient(
+    70% 50% at 80% 0%,
+    rgba(255, 90, 78, 0.13) 0%,
+    transparent 60%
+  );
+}
+
+.glow-gradient-green {
+  background: radial-gradient(
+    70% 50% at 80% 0%,
+    rgba(61, 220, 132, 0.13) 0%,
+    transparent 60%
+  );
+}
+
+.night-overlay-bg {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--color-bg-base) 93%, transparent) 0%,
+    color-mix(in srgb, var(--color-surface) 89%, transparent) 100%
+  );
+}
+
+.moon-circle {
+  background: radial-gradient(
+    circle at 35% 35%,
+    #2a3a5c 0%,
+    var(--color-surface-alt) 60%,
+    var(--color-bg-elevated) 100%
+  );
+  border: 1px solid var(--color-edge);
+  box-shadow:
+    0 0 50px -10px color-mix(in srgb, var(--color-teal) 27%, transparent),
+    inset -8px -8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.stars {
+  background-image:
+    radial-gradient(
+      1.5px 1.5px at 20% 30%,
+      rgba(232, 238, 249, 0.33) 50%,
+      transparent 51%
+    ),
+    radial-gradient(
+      1px 1px at 70% 20%,
+      rgba(232, 238, 249, 0.4) 50%,
+      transparent 51%
+    ),
+    radial-gradient(
+      1.5px 1.5px at 85% 60%,
+      rgba(232, 238, 249, 0.27) 50%,
+      transparent 51%
+    ),
+    radial-gradient(
+      1px 1px at 35% 75%,
+      rgba(232, 238, 249, 0.33) 50%,
+      transparent 51%
+    ),
+    radial-gradient(
+      1px 1px at 55% 50%,
+      rgba(232, 238, 249, 0.2) 50%,
+      transparent 51%
+    ),
+    radial-gradient(
+      1.5px 1.5px at 12% 80%,
+      rgba(232, 238, 249, 0.33) 50%,
+      transparent 51%
+    ),
+    radial-gradient(
+      1px 1px at 90% 88%,
+      rgba(232, 238, 249, 0.27) 50%,
+      transparent 51%
+    );
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.z-letter {
+  animation: zfloat 3s ease-in-out infinite;
+}
+.z2 {
+  animation-delay: 0.6s;
+}
+.z3 {
+  animation-delay: 1.2s;
+}
+
+@keyframes zfloat {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-22px) scale(0.7);
+    opacity: 0;
+  }
+}
