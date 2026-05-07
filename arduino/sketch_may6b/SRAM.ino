@@ -9,19 +9,20 @@
 
 const char* SSID = "Gamefound";
 const char* PASSWORD = "gf11jeden";
-const char* BACKEND_URL = "http://192.168.0.137:3000/api/status";
-const char* CONFIG_URL = "http://192.168.0.137:3000/api/config";
+const char* BACKEND_URL = "https://sram-gf-default-rtdb.europe-west1.firebasedatabase.app/restrooms/men1/history.json";
+const char* CONFIG_URL = "https://sram-gf-default-rtdb.europe-west1.firebasedatabase.app/restrooms/men1/config.json";
 const char* RESTROOM_ID = "men1";
-const int DEFAULT_THRESHOLD_CM = 80;
+const int DEFAULT_THRESHOLD_CM = 140;
 
 // ==========================================
 // USTAWIENIA OSZCZĘDZANIA ENERGII:
 // ==========================================
-#define TIME_TO_SLEEP 10
+#define TIME_TO_SLEEP 5
 #define NIGHT_SLEEP_MINUTES 30  // jak długo spać w nocy (minuty)
 #define NIGHT_START_HOUR 18
 #define NIGHT_END_HOUR 6
-#define CONFIG_FETCH_INTERVAL 3600  // fetch config every hour (seconds)
+#define CONFIG_FETCH_INTERVAL 180  // fetch config every 3 minutes (seconds)
+#define HEARTBEAT_INTERVAL 180     // send heartbeat every 3 minutes
 
 // NTP
 const char* NTP_SERVER = "pool.ntp.org";
@@ -33,13 +34,14 @@ const int DAYLIGHT_OFFSET_SEC = 3600;  // +1h letni czas
 // ==========================================
 RTC_DATA_ATTR bool previousState = false;
 RTC_DATA_ATTR bool firstBoot = true;
-RTC_DATA_ATTR bool pendingRetry = false;  
+RTC_DATA_ATTR bool pendingRetry = false;
 RTC_DATA_ATTR int retryCount = 0;
 RTC_DATA_ATTR unsigned long rtcEpoch = 0;       // last synced epoch (seconds)
 RTC_DATA_ATTR unsigned long rtcSleepTotal = 0;  // accumulated sleep since last sync (seconds)
 RTC_DATA_ATTR unsigned long timeSinceConfig = 0; // seconds since last config fetch
 RTC_DATA_ATTR int thresholdCm = DEFAULT_THRESHOLD_CM;
-const int MAX_RETRIES = 3;                
+RTC_DATA_ATTR unsigned long timeSinceHeartbeat = 0; // seconds since last heartbeat
+const int MAX_RETRIES = 3;
 
 // ==========================================
 // PONIŻEJ NIC NIE ZMIENIAJ
@@ -88,6 +90,20 @@ float measureDistance() {
   return dist;
 }
 
+void sendHeartbeat() {
+  HTTPClient http;
+  http.begin("https://sram-gf-default-rtdb.europe-west1.firebasedatabase.app/restrooms/men1/heartbeat.json");
+  http.addHeader("Content-Type", "application/json");
+  int code = http.PUT("{\"last_seen\":{\".sv\":\"timestamp\"},\"threshold_cm\":" + String(thresholdCm) + "}");
+  if (code > 0) {
+    Serial.println("Heartbeat sent OK");
+  } else {
+    Serial.print("Heartbeat failed: "); Serial.println(code);
+  }
+  http.end();
+  timeSinceHeartbeat = 0;
+}
+
 bool connectWiFiAndSend(bool occupied) {
   Serial.print("Lacze z WiFi: ");
   Serial.println(SSID);
@@ -125,13 +141,17 @@ bool connectWiFiAndSend(bool occupied) {
       fetchConfig();
     }
 
+    // Send heartbeat if due
+    if (timeSinceHeartbeat >= HEARTBEAT_INTERVAL || firstBoot) {
+      sendHeartbeat();
+    }
+
     HTTPClient http;
     http.begin(BACKEND_URL);
     http.addHeader("Content-Type", "application/json");
 
-    char body[64];
-    snprintf(body, sizeof(body), "{\"id\":\"%s\",\"occupied\":%s}",
-             RESTROOM_ID, occupied ? "true" : "false");
+    String body = "{\"occupied\":" + String(occupied ? "true" : "false") + 
+                  ",\"timestamp\":{\".sv\":\"timestamp\"}}";
 
     int httpCode = http.POST(body);
 
@@ -142,7 +162,15 @@ bool connectWiFiAndSend(bool occupied) {
     } else {
       Serial.println("Blad wysylania! Kod: " + String(httpCode));
     }
+    http.end();
 
+    // Aktualizujemy też stan aktualny (aby dashboard nie musiał przeszukiwać historii)
+    http.begin("https://sram-gf-default-rtdb.europe-west1.firebasedatabase.app/restrooms/men1/current.json");
+    http.addHeader("Content-Type", "application/json");
+    int putCode = http.PUT("{\"occupied\":" + String(occupied ? "true" : "false") + "}");
+    if (putCode <= 0) {
+      Serial.println("Blad PUT current! Kod: " + String(putCode));
+    }
     http.end();
   } else {
     Serial.println("\nNie udalo sie polaczyc z WiFi. Sprobujemy nastepnym razem.");
@@ -193,9 +221,20 @@ void setup() {
   Serial.print("cm | Status: ");
   Serial.println(occupied ? "ZAJETE" : "WOLNE");
 
-  // 2. Jeśli status się zmienił, to pierwszy boot, lub ostatnie wysyłanie nie powiodło się — wyślij
+  // 2. Jeśli status się zmienił, to pierwszy boot, heartbeat, lub ostatnie wysyłanie nie powiodło się — wyślij
+  // Skip heartbeat at night to save power
+  bool isNight = false;
+  if (rtcEpoch > 0) {
+    unsigned long estimatedNow = rtcEpoch + rtcSleepTotal;
+    struct tm* tmInfo = localtime((time_t*)&estimatedNow);
+    if (tmInfo) {
+      int h = tmInfo->tm_hour;
+      isNight = (h >= NIGHT_START_HOUR || h < NIGHT_END_HOUR);
+    }
+  }
+  bool heartbeatDue = !isNight && (timeSinceHeartbeat >= HEARTBEAT_INTERVAL);
   bool shouldSend = firstBoot || (occupied != previousState) ||
-                    (pendingRetry && retryCount < MAX_RETRIES);
+                    (pendingRetry && retryCount < MAX_RETRIES) || heartbeatDue;
 
   if (shouldSend) {
     Serial.println(">>> Uruchamiam radio WiFi...");
@@ -247,6 +286,7 @@ void setup() {
 
   rtcSleepTotal += sleepSeconds;
   timeSinceConfig += sleepSeconds;
+  timeSinceHeartbeat += sleepSeconds;
 
   Serial.print("Ide spac na "); Serial.print(sleepSeconds); Serial.println(" sekund. Dobranoc!\n");
   Serial.flush(); 
