@@ -26,8 +26,7 @@ const int DEFAULT_THRESHOLD_CM = 140;
 
 // NTP
 const char* NTP_SERVER = "pool.ntp.org";
-const long GMT_OFFSET_SEC = 3600;      // UTC+1 (Polska zima)
-const int DAYLIGHT_OFFSET_SEC = 3600;  // +1h letni czas
+const char* TIMEZONE = "CET-1CEST,M3.5.0,M10.5.0/3"; // Poland auto DST
 
 // ==========================================
 // ZMIENNE W PAMIĘCI RTC (przetrwają Deep Sleep)
@@ -104,7 +103,7 @@ void sendHeartbeat() {
   timeSinceHeartbeat = 0;
 }
 
-bool connectWiFiAndSend(bool occupied) {
+bool connectWiFiAndSend(bool occupied, bool stateChanged) {
   Serial.print("Lacze z WiFi: ");
   Serial.println(SSID);
   
@@ -113,7 +112,7 @@ bool connectWiFiAndSend(bool occupied) {
   esp_wifi_set_max_tx_power(44); 
 
   int proba = 0;
-  while (WiFi.status() != WL_CONNECTED && proba < 20) {
+  while (WiFi.status() != WL_CONNECTED && proba < 40) {
     delay(250);
     Serial.print(".");
     proba++;
@@ -125,7 +124,7 @@ bool connectWiFiAndSend(bool occupied) {
     Serial.println("\nPolaczono! Wysylam dane do backendu...");
 
     // Sync time via NTP while WiFi is up
-    configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC, NTP_SERVER);
+    configTzTime(TIMEZONE, NTP_SERVER);
     struct tm timeinfo;
     if (getLocalTime(&timeinfo, 2000)) {
       time_t now;
@@ -146,32 +145,36 @@ bool connectWiFiAndSend(bool occupied) {
       sendHeartbeat();
     }
 
-    HTTPClient http;
-    http.begin(BACKEND_URL);
-    http.addHeader("Content-Type", "application/json");
+    // Only POST to history when state actually changed
+    if (stateChanged) {
+      HTTPClient http;
+      http.begin(BACKEND_URL);
+      http.addHeader("Content-Type", "application/json");
 
-    String body = "{\"occupied\":" + String(occupied ? "true" : "false") + 
-                  ",\"timestamp\":{\".sv\":\"timestamp\"}}";
+      String body = "{\"occupied\":" + String(occupied ? "true" : "false") + 
+                    ",\"timestamp\":{\".sv\":\"timestamp\"}}";
 
-    int httpCode = http.POST(body);
+      int httpCode = http.POST(body);
 
-    if (httpCode > 0) {
-      Serial.print("Wyslano: "); Serial.print(body);
-      Serial.print(" | Odpowiedz: "); Serial.println(httpCode);
-      success = true;
-    } else {
-      Serial.println("Blad wysylania! Kod: " + String(httpCode));
+      if (httpCode > 0) {
+        Serial.print("Wyslano: "); Serial.print(body);
+        Serial.print(" | Odpowiedz: "); Serial.println(httpCode);
+      } else {
+        Serial.println("Blad wysylania! Kod: " + String(httpCode));
+      }
+      http.end();
+
+      // Aktualizujemy też stan aktualny
+      http.begin("https://sram-gf-default-rtdb.europe-west1.firebasedatabase.app/restrooms/men1/current.json");
+      http.addHeader("Content-Type", "application/json");
+      int putCode = http.PUT("{\"occupied\":" + String(occupied ? "true" : "false") + "}");
+      if (putCode <= 0) {
+        Serial.println("Blad PUT current! Kod: " + String(putCode));
+      }
+      http.end();
     }
-    http.end();
 
-    // Aktualizujemy też stan aktualny (aby dashboard nie musiał przeszukiwać historii)
-    http.begin("https://sram-gf-default-rtdb.europe-west1.firebasedatabase.app/restrooms/men1/current.json");
-    http.addHeader("Content-Type", "application/json");
-    int putCode = http.PUT("{\"occupied\":" + String(occupied ? "true" : "false") + "}");
-    if (putCode <= 0) {
-      Serial.println("Blad PUT current! Kod: " + String(putCode));
-    }
-    http.end();
+    success = true;
   } else {
     Serial.println("\nNie udalo sie polaczyc z WiFi. Sprobujemy nastepnym razem.");
   }
@@ -183,6 +186,10 @@ bool connectWiFiAndSend(bool occupied) {
 
 void setup() {
   setCpuFrequencyMhz(80);
+
+  // Restore timezone so localtime() returns correct local hours after deep sleep
+  setenv("TZ", TIMEZONE, 1);
+  tzset();
 
   Serial.begin(115200);
   delay(10);
@@ -196,7 +203,7 @@ void setup() {
 
   // 1. Wykonaj pomiar — dwa odczyty z krótką przerwą
   float distance1 = measureDistance();
-  delay(50);
+  delay(100);
   float distance2 = measureDistance();
 
   bool isOcc1 = (distance1 > 0 && distance1 < thresholdCm);
@@ -214,6 +221,26 @@ void setup() {
   }
   // W każdym innym przypadku (np. jeden pomiar to glitch), ignorujemy i zostawiamy 'previousState'
 
+  // Evaluate night mode BEFORE deciding whether to send
+  bool isNight = false;
+  unsigned long sleepSeconds = TIME_TO_SLEEP;
+
+  if (rtcEpoch > 0) {
+    unsigned long estimatedNow = rtcEpoch + rtcSleepTotal;
+    struct tm* tmInfo = localtime((time_t*)&estimatedNow);
+    if (tmInfo) {
+      int currentHour = tmInfo->tm_hour;
+      Serial.print("Szacowana godzina: "); Serial.println(currentHour);
+      isNight = (currentHour >= NIGHT_START_HOUR || currentHour < NIGHT_END_HOUR);
+
+      if (isNight) {
+        occupied = false; // Force FREE at night
+        sleepSeconds = NIGHT_SLEEP_MINUTES * 60UL;
+        Serial.println("Tryb nocny — wymuszam WOLNE, dlugi sen.");
+      }
+    }
+  }
+
   Serial.print("Odczyty: ");
   Serial.print(distance1);
   Serial.print("cm, ");
@@ -222,23 +249,14 @@ void setup() {
   Serial.println(occupied ? "ZAJETE" : "WOLNE");
 
   // 2. Jeśli status się zmienił, to pierwszy boot, heartbeat, lub ostatnie wysyłanie nie powiodło się — wyślij
-  // Skip heartbeat at night to save power
-  bool isNight = false;
-  if (rtcEpoch > 0) {
-    unsigned long estimatedNow = rtcEpoch + rtcSleepTotal;
-    struct tm* tmInfo = localtime((time_t*)&estimatedNow);
-    if (tmInfo) {
-      int h = tmInfo->tm_hour;
-      isNight = (h >= NIGHT_START_HOUR || h < NIGHT_END_HOUR);
-    }
-  }
   bool heartbeatDue = !isNight && (timeSinceHeartbeat >= HEARTBEAT_INTERVAL);
   bool shouldSend = firstBoot || (occupied != previousState) ||
                     (pendingRetry && retryCount < MAX_RETRIES) || heartbeatDue;
 
   if (shouldSend) {
     Serial.println(">>> Uruchamiam radio WiFi...");
-    bool success = connectWiFiAndSend(occupied);
+    bool stateChanged = (occupied != previousState) || firstBoot;
+    bool success = connectWiFiAndSend(occupied, stateChanged);
     
     if (success) {
       previousState = occupied;
@@ -259,30 +277,7 @@ void setup() {
     if (!pendingRetry) retryCount = 0;
   }
 
-  // 3. Oblicz czas snu — dłuższy w nocy
-  unsigned long sleepSeconds = TIME_TO_SLEEP;
-
-  if (rtcEpoch > 0) {
-    // Szacuj aktualną godzinę na podstawie ostatniego synca + skumulowanego snu
-    unsigned long estimatedNow = rtcEpoch + rtcSleepTotal;
-    int currentHour = (int)((estimatedNow % 86400UL) / 3600UL);
-    // Adjust for timezone (already applied in NTP sync, so currentHour is local)
-    // Recalculate from struct if available, otherwise use epoch math
-    struct tm* tmInfo = localtime((time_t*)&estimatedNow);
-    if (tmInfo) currentHour = tmInfo->tm_hour;
-
-    Serial.print("Szacowana godzina: "); Serial.println(currentHour);
-
-    if (currentHour >= NIGHT_START_HOUR || currentHour < NIGHT_END_HOUR) {
-      sleepSeconds = NIGHT_SLEEP_MINUTES * 60UL;
-      Serial.println("Tryb nocny — dlugi sen.");
-      // Upewnij się, że toaleta jest raportowana jako wolna na noc
-      if (previousState) {
-        previousState = false;
-        // Nie wysyłamy — WiFi jest już wyłączone, wyślemy rano
-      }
-    }
-  }
+  // 3. Oblicz czas snu (sleepSeconds already set by night mode above)
 
   rtcSleepTotal += sleepSeconds;
   timeSinceConfig += sleepSeconds;
