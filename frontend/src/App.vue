@@ -16,6 +16,7 @@ const derived = computed(() => ({
   occupied: currentOccupied.value,
   lastChangedAt: currentLastChangedAt.value,
 }));
+  
 
 const { states } = useOccupancyState(derived);
 </script>
