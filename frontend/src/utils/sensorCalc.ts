@@ -1,10 +1,4 @@
-import type { SensorReading } from "../types/sensor";
-
-export const OCCUPANCY_THRESHOLD_CM = 80;
-
-export function isOccupied(cm: number): boolean {
-  return cm > 0 && cm < OCCUPANCY_THRESHOLD_CM;
-}
+import type { OccupancyEntry } from "../types/sensor";
 
 export interface DerivedStats {
   occupied: boolean;
@@ -15,7 +9,7 @@ export interface DerivedStats {
   busyHours: number[]; // 24-element: visit starts per hour
 }
 
-export function deriveAll(readings: SensorReading[]): DerivedStats {
+export function deriveAll(entries: OccupancyEntry[]): DerivedStats {
   const empty = (): DerivedStats => ({
     occupied: false,
     lastChangedAt: Date.now(),
@@ -25,45 +19,39 @@ export function deriveAll(readings: SensorReading[]): DerivedStats {
     busyHours: new Array<number>(24).fill(0),
   });
 
-  if (readings.length === 0) return empty();
+  if (entries.length === 0) return empty();
 
   // One sort — O(n log n)
-  const sorted = [...readings].sort(
-    (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
-  );
+  const sorted = [...entries].sort((a, b) => a.timestamp - b.timestamp);
 
   const busyHours = new Array<number>(24).fill(0);
   let completedCount = 0;
   let totalDurationMs = 0;
-  let currentStart: Date | null = null;
+  let currentStart: number | null = null;
   let currentOccupied = false;
-  // Tracks when the last free↔occupied transition occurred
-  let lastChangedAt = new Date(sorted[0].time).getTime();
+  let lastChangedAt = sorted[0].timestamp;
 
   // One pass — O(n)
-  for (const r of sorted) {
-    const occ = isOccupied(r.cm);
-
-    if (occ && !currentOccupied) {
+  for (const entry of sorted) {
+    if (entry.occupied && !currentOccupied) {
       // free → occupied: start a visit
-      currentStart = new Date(r.time);
+      currentStart = entry.timestamp;
       currentOccupied = true;
-      lastChangedAt = currentStart.getTime();
-    } else if (!occ && currentOccupied && currentStart) {
+      lastChangedAt = entry.timestamp;
+    } else if (!entry.occupied && currentOccupied && currentStart !== null) {
       // occupied → free: close the visit
-      const endMs = new Date(r.time).getTime();
       completedCount++;
-      totalDurationMs += endMs - currentStart.getTime();
-      busyHours[currentStart.getHours()]++;
+      totalDurationMs += entry.timestamp - currentStart;
+      busyHours[new Date(currentStart).getHours()]++;
       currentStart = null;
       currentOccupied = false;
-      lastChangedAt = endMs;
+      lastChangedAt = entry.timestamp;
     }
   }
 
-  // Count ongoing visit (stall still occupied at the end of readings)
-  if (currentOccupied && currentStart) {
-    busyHours[currentStart.getHours()]++;
+  // Count ongoing visit (stall still occupied at end of entries)
+  if (currentOccupied && currentStart !== null) {
+    busyHours[new Date(currentStart).getHours()]++;
   }
 
   // Peak hour — O(24), negligible

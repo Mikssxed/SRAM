@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import type { AppStalls } from "../../types/stall";
 import type { DerivedStats } from "../../utils/sensorCalc";
-import { fmtMMSS } from "../../utils/time";
+import { formatDuration } from "../../utils/time";
 
 const props = defineProps<{
   states: AppStalls;
@@ -31,7 +31,7 @@ const stats = computed<StatItem[]>(() => [
   {
     label: "AVG DURATION",
     value: props.derived.visitsToday
-      ? fmtMMSS(props.derived.avgDurationSec)
+      ? formatDuration(props.derived.avgDurationSec)
       : "--:--",
     colorClass: "text-content",
   },

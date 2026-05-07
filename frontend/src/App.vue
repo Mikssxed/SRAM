@@ -4,15 +4,18 @@ import AppFooter from "./components/layout/AppFooter.vue";
 import AppHeader from "./components/layout/AppHeader.vue";
 import StallCard from "./components/stall/StallCard.vue";
 import TopStats from "./components/stats/TopStats.vue";
+import { useFirebaseOccupancy } from "./composables/useFirebaseOccupancy";
 import { useOccupancyState } from "./composables/useOccupancyState";
-import { useSensorData } from "./composables/useSensorData";
-import { BUSY_HOURS_FEMALE } from "./data/mockOccupancy";
 import { deriveAll } from "./utils/sensorCalc";
 
-const { readings } = useSensorData();
+const { entries, currentOccupied, currentLastChangedAt, isError } =
+  useFirebaseOccupancy();
 
-// Single pass over readings — every consumer reads from this one computed
-const derived = computed(() => deriveAll(readings.value));
+const derived = computed(() => ({
+  ...deriveAll(entries.value),
+  occupied: currentOccupied.value,
+  lastChangedAt: currentLastChangedAt.value,
+}));
 
 const { states } = useOccupancyState(derived);
 </script>
@@ -22,7 +25,7 @@ const { states } = useOccupancyState(derived);
     class="min-h-screen bg-linear-to-b from-bg-elevated to-bg-base text-content font-sans px-4 sm:px-8 pb-16 pt-7"
   >
     <div class="max-w-300 mx-auto flex flex-col gap-5 sm:gap-6">
-      <AppHeader />
+      <AppHeader :is-error="isError" />
 
       <!-- Page title -->
       <div class="mt-1 sm:mt-2">
@@ -51,7 +54,6 @@ const { states } = useOccupancyState(derived);
           kind="female"
           label="Women's Room"
           :state="states.female"
-          :busy-hours="BUSY_HOURS_FEMALE"
           :coming-soon="true"
         />
       </div>

@@ -17,9 +17,12 @@ const maxValue = computed(() => Math.max(...props.data));
 
 const peakHour = computed(() => props.data.indexOf(maxValue.value));
 
+const calculatePercentage = (value: number) =>
+  maxValue.value === 0 ? 0 : Math.max(4, (value / maxValue.value) * 100);
+
 const bars = computed<Bar[]>(() =>
   props.data.map((value, hour) => ({
-    heightPct: Math.max(4, (value / maxValue.value) * 100),
+    heightPct: calculatePercentage(value),
     isNow: hour === currentHour.value,
   })),
 );

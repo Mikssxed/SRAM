@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import LiveClock from "../ui/LiveClock.vue";
+
+defineProps<{ isError?: boolean }>();
 </script>
 
 <template>
@@ -12,7 +14,7 @@ import LiveClock from "../ui/LiveClock.vue";
         🚽
       </div>
       <div class="flex flex-col leading-none">
-        <span class="text-[18px] font-extrabold text-content tracking-[-0.3px]">
+        <span class="text-lg font-extrabold text-content tracking-[-0.3px]">
           <span class="text-live-green">SRAM</span>
         </span>
       </div>
@@ -21,10 +23,10 @@ import LiveClock from "../ui/LiveClock.vue";
     <!-- Right: location + clock -->
     <div class="flex items-center gap-3">
       <span
-        class="hidden sm:inline text-[12px] text-content-dim font-mono tracking-[1px]"
+        class="hidden sm:inline text-xs text-content-dim font-mono tracking-[1px]"
         >FLOOR 1 · OFFICE</span
       >
-      <LiveClock />
+      <LiveClock :is-error="isError" />
     </div>
   </header>
 </template>

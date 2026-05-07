@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { PLAYFUL_COPY } from "../../data/mockOccupancy";
+import { PLAYFUL_COPY } from "../../constants/copyConstants";
 import type { StallKind, StallState } from "../../types/stall";
-import { fmtMMSS } from "../../utils/time";
+import { formatDuration } from "../../utils/time";
 import BusyHoursChart from "./BusyHoursChart.vue";
 import ComingSoonOverlay from "./ComingSoonOverlay.vue";
 import GenderGlyph from "./GenderGlyph.vue";
@@ -13,24 +13,25 @@ const props = defineProps<{
   kind: StallKind;
   label: string;
   state: StallState;
-  busyHours: number[];
+  busyHours?: number[];
   comingSoon?: boolean;
 }>();
 
 const emit = defineEmits<{ "toggle-notify": [] }>();
 
-// --- Night mode: sensors off between 20:00 and 06:00 ---
 const hour = ref(new Date().getHours());
 let hourTimer: ReturnType<typeof setInterval>;
+
 onMounted(() => {
   hourTimer = setInterval(() => {
     hour.value = new Date().getHours();
-  }, 60_000);
+  }, 1000);
 });
+
 onUnmounted(() => clearInterval(hourTimer));
+
 const sleeping = computed(() => hour.value >= 20 || hour.value < 6);
 
-// --- Elapsed timer (ticks independently of parent state updates) ---
 const tickedDuration = ref(props.state.duration);
 let durationTimer: ReturnType<typeof setInterval>;
 
@@ -45,13 +46,13 @@ function restartTimer() {
 
 watch(() => props.state.lastChange, restartTimer, { immediate: false });
 watch(() => props.state.occupied, restartTimer);
+
 onMounted(restartTimer);
 onUnmounted(() => clearInterval(durationTimer));
 
-// --- Computed display values ---
 const occupied = computed(() => props.state.occupied);
 
-const elapsedDisplay = computed(() => fmtMMSS(tickedDuration.value));
+const elapsedDisplay = computed(() => formatDuration(tickedDuration.value));
 
 const copyPhrase = computed(() => {
   const pool = occupied.value ? PLAYFUL_COPY.occupied : PLAYFUL_COPY.free;
@@ -66,7 +67,6 @@ const restroomLabel = computed(() =>
   props.kind === "male" ? "RESTROOM · M" : "RESTROOM · W",
 );
 
-// Full class names kept as literals — Tailwind scanner must see both variants
 const accentClasses = computed(() =>
   occupied.value
     ? {
@@ -84,6 +84,12 @@ const accentClasses = computed(() =>
         buttonBg: "bg-live-green/8",
       },
 );
+
+const overlayComponent = computed(() => {
+  if (props.comingSoon) return ComingSoonOverlay;
+  if (sleeping.value) return NightModeOverlay;
+  return null;
+});
 </script>
 
 <template>
@@ -93,8 +99,7 @@ const accentClasses = computed(() =>
       accentClasses.cardShadow,
     ]"
   >
-    <ComingSoonOverlay v-if="comingSoon" />
-    <NightModeOverlay v-else-if="sleeping" />
+    <component :is="overlayComponent" />
 
     <!-- Background glow -->
     <div
@@ -149,6 +154,6 @@ const accentClasses = computed(() =>
       </div>
     </div>
     <!-- Busy hours chart -->
-    <BusyHoursChart :data="busyHours" :occupied="occupied" />
+    <BusyHoursChart v-if="busyHours" :data="busyHours" :occupied="occupied" />
   </div>
 </template>
