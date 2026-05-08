@@ -1,14 +1,20 @@
-# 🚽 SRAM – Smart Restroom Availability Monitor
+# SRAM – Smart Restroom Availability Monitor
 
-Real-time restroom occupancy detection system using ultrasonic sensors, ESP32 microcontrollers, and a web dashboard. Built during a 3-day hackathon.
+Real-time restroom occupancy detection system using ultrasonic sensors, ESP32 microcontrollers, and a Vue.js web dashboard. Built during a 3-day hackathon.
 
 ## How It Works
 
-An ultrasonic sensor (HC-SR04) is mounted on the wall opposite the toilet. It measures the distance every second — if someone is sitting or standing, the distance drops below a calibrated threshold, and the system reports the restroom as **occupied**. The ESP32 sends this status over WiFi to a backend server, which pushes updates to a web frontend via WebSocket in real-time.
+An HC-SR04 ultrasonic sensor measures distance every few seconds. If someone is present, the distance drops below a calibrated threshold and the ESP32 reports the stall as occupied. The ESP32 sends data directly to Firebase Realtime Database over WiFi. The Vue.js frontend reads from Firebase endpoints to display live occupancy status.
 
 ```
-[HC-SR04] → [Logic Level Converter] → [ESP32] → WiFi → [Backend] → WebSocket → [Frontend]
+[HC-SR04] → [ESP32] → WiFi → [Firebase Realtime DB] → [Vue.js Frontend]
 ```
+
+## Stack
+
+- **Firmware** — Arduino C++ on ESP32, deep sleep between readings for battery efficiency
+- **Backend** — Firebase Realtime Database (no custom server)
+- **Frontend** — Vue 3 + Vite, reads Firebase REST endpoints, displays stall status with live clock, busy hours chart, and battery/night-mode indicators
 
 ## Hardware
 
@@ -21,7 +27,7 @@ An ultrasonic sensor (HC-SR04) is mounted on the wall opposite the toilet. It me
 | Enclosure             | Junction box 110×75×59mm          | Houses electronics on the wall               |
 | Wiring                | Dupont female-female cables       | Connects all components (no soldering!)      |
 
-## Wiring Diagram
+## Wiring
 
 ```
 [Powerbank USB-C] → [ESP32 USB-C port]
@@ -40,12 +46,10 @@ ESP32 pin 5V    → HC-SR04 pin VCC
 ESP32 pin GND   → HC-SR04 pin GND
 ```
 
-## Firmware (ESP32 – Arduino C++)
-
-## Cost
-
-Total hardware cost: ~229 PLN (~$58 USD) for one restroom sensor.
-
 ## Team
+
+[https://github.com/msern]
+[https://github.com/mmoszczenski]
+[https://github.com/dofranko]
 
 Built with ❤️ during a 3-day hackathon.
