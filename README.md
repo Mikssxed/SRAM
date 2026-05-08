@@ -54,3 +54,10 @@ ESP32 pin GND   → HC-SR04 pin GND
 [https://github.com/Mikssxed]
 
 Built with ❤️ during a 3-day hackathon.
+
+<img width="1346" height="895" alt="image (4)" src="https://github.com/user-attachments/assets/dc392828-2302-418f-8b96-a6182aa13f1b" />
+<img width="1350" height="894" alt="image (3)" src="https://github.com/user-attachments/assets/0ae7f4e4-c3a6-4010-b84b-83b59ebb5589" />
+<img width="1351" height="905" alt="image (1)" src="https://github.com/user-attachments/assets/88e0e25d-427e-4f2f-b7b9-56eda4c590de" />
+<img width="1536" height="2048" alt="eced9cc5-2e2a-4f1e-b1d8-9c02e6a1a5e2" src="https://github.com/user-attachments/assets/9445d253-c6bb-4df6-9dd0-d1f068c40320" />
+<img width="1536" height="2048" alt="6190ee28-9465-418f-9f01-e140e5c74aad" src="https://github.com/user-attachments/assets/201ee5ce-f3d1-46e8-8ca4-1d0a2f98f8e9" />
+<img width="1536" height="2048" alt="4ba752cd-894f-492a-a862-2b919ed3c43b" src="https://github.com/user-attachments/assets/26bfa376-dc85-4aa0-adb1-5814d245c6e1" />
