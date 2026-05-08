@@ -119,11 +119,9 @@ export function useFirebaseOccupancy() {
     unsubscribeCurrent = onValue(
       currentRef,
       (snap: DataSnapshot) => {
-        const occupied: boolean = snap.val()?.occupied ?? false;
-        if (occupied !== currentOccupied.value) {
-          currentOccupied.value = occupied;
-          currentLastChangedAt.value = Date.now();
-        }
+        const val = snap.val();
+        currentOccupied.value = val?.occupied ?? false;
+        currentLastChangedAt.value = val?.timestamp ?? Date.now();
         isError.value = false;
       },
       () => {

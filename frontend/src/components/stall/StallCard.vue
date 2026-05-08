@@ -56,7 +56,7 @@ let durationTimer: ReturnType<typeof setInterval>;
 
 function restartTimer() {
   clearInterval(durationTimer);
-  tickedDuration.value = props.state.duration;
+  tickedDuration.value = Math.round((Date.now() - props.state.lastChange) / 1000);
 
   durationTimer = setInterval(() => {
     tickedDuration.value++;
@@ -66,8 +66,18 @@ function restartTimer() {
 watch(() => props.state.lastChange, restartTimer, { immediate: false });
 watch(() => props.state.occupied, restartTimer);
 
-onMounted(restartTimer);
-onUnmounted(() => clearInterval(durationTimer));
+function handleVisibility() {
+  if (document.visibilityState === "visible") restartTimer();
+}
+
+onMounted(() => {
+  restartTimer();
+  document.addEventListener("visibilitychange", handleVisibility);
+});
+onUnmounted(() => {
+  clearInterval(durationTimer);
+  document.removeEventListener("visibilitychange", handleVisibility);
+});
 
 const occupied = computed(() => props.state.occupied);
 

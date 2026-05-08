@@ -37,7 +37,7 @@ const stats = computed<StatItem[]>(() => [
   },
   {
     label: "PEAK HOUR",
-    value: props.derived.visitsToday ? `${props.derived.peakHour}:00` : "--:--",
+    value: props.derived.visitsToday ? `${props.derived.peakHour}:00-${props.derived.peakHour + 1}:00` : "--:--",
     colorClass: "text-amber",
   },
 ]);

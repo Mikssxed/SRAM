@@ -59,7 +59,7 @@ const barDimColorClass = computed(() =>
         >BUSY HOURS · TODAY</span
       >
       <span class="text-xs text-content-dim">
-        peak <span class="text-content font-semibold">{{ peakHour }}:00</span>
+        peak <span class="text-content font-semibold">{{ peakHour }}:00-{{ peakHour + 1 }}:00</span>
       </span>
     </div>
 

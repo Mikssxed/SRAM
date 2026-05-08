@@ -24,15 +24,22 @@ export function deriveAll(entries: OccupancyEntry[]): DerivedStats {
   // One sort — O(n log n)
   const sorted = [...entries].sort((a, b) => a.timestamp - b.timestamp);
 
+  // One filter pass — drop entries whose state lasted ≤ 10 s (sensor noise)
+  const MIN_DURATION_MS = 10_000;
+  const denoised = sorted.filter((_, i) => {
+    const next = sorted[i + 1];
+    return !next || next.timestamp - sorted[i].timestamp > MIN_DURATION_MS;
+  });
+
   const busyHours = new Array<number>(24).fill(0);
   let completedCount = 0;
   let totalDurationMs = 0;
   let currentStart: number | null = null;
   let currentOccupied = false;
-  let lastChangedAt = sorted[0].timestamp;
+  let lastChangedAt = denoised[0]?.timestamp ?? sorted[0].timestamp;
 
   // One pass — O(n)
-  for (const entry of sorted) {
+  for (const entry of denoised) {
     if (entry.occupied && !currentOccupied) {
       // free → occupied: start a visit
       currentStart = entry.timestamp;

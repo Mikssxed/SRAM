@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Analytics } from "@vercel/analytics/vue";
+import { SpeedInsights } from "@vercel/speed-insights/vue";
 import { computed } from "vue";
 import AppHeader from "./components/layout/AppHeader.vue";
 import AppLoadingOverlay from "./components/layout/AppLoadingOverlay.vue";
@@ -8,20 +10,28 @@ import { useFirebaseOccupancy } from "./composables/useFirebaseOccupancy";
 import { useOccupancyState } from "./composables/useOccupancyState";
 import { deriveAll } from "./utils/sensorCalc";
 
-const { entries, currentOccupied, currentLastChangedAt, isLoading, isError, sensorOffline, isOffline } =
-  useFirebaseOccupancy();
+const {
+  entries,
+  currentOccupied,
+  currentLastChangedAt,
+  isLoading,
+  isError,
+  sensorOffline,
+  isOffline,
+} = useFirebaseOccupancy();
 
 const derived = computed(() => ({
   ...deriveAll(entries.value),
   occupied: currentOccupied.value,
   lastChangedAt: currentLastChangedAt.value,
 }));
-  
 
 const { states } = useOccupancyState(derived);
 </script>
 
 <template>
+  <Analytics />
+  <SpeedInsights />
   <Transition name="fade">
     <AppLoadingOverlay v-if="isLoading" />
   </Transition>
