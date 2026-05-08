@@ -41,7 +41,6 @@ const emit = defineEmits<{ "toggle-notify": [] }>();
 
 const hour = ref(new Date().getHours());
 let hourTimer: ReturnType<typeof setInterval>;
-
 onMounted(() => {
   hourTimer = setInterval(() => {
     hour.value = new Date().getHours();
