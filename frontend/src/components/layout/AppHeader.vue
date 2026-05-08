@@ -9,7 +9,7 @@ defineProps<{ isError?: boolean }>();
     <!-- Logo -->
     <div class="flex items-center gap-3">
       <div
-        class="w-9.5 h-9.5 rounded-[10px] grid place-items-center text-xl bg-linear-to-br from-live-green to-teal shadow-header"
+        class="w-9.5 h-9.5 rounded-[10px] grid place-items-center text-xl bg-linear-to-br from-live-green-deep to-teal/50 shadow-header"
       >
         🚽
       </div>
