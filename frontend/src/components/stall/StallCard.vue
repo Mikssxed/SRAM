@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from "vue";
 import { PLAYFUL_COPY } from "../../constants/copyConstants";
 import type { StallKind, StallState } from "../../types/stall";
 import { formatDuration } from "../../utils/time";
 import BusyHoursChart from "./BusyHoursChart.vue";
-import ComingSoonOverlay from "./ComingSoonOverlay.vue";
 import GenderGlyph from "./GenderGlyph.vue";
-import NightModeOverlay from "./NightModeOverlay.vue";
-import SensorOfflineOverlay from "./SensorOfflineOverlay.vue";
 import StatusPill from "./StatusPill.vue";
+
+const ComingSoonOverlay = defineAsyncComponent(() => import("./ComingSoonOverlay.vue"));
+const NightModeOverlay = defineAsyncComponent(() => import("./NightModeOverlay.vue"));
+const SensorOfflineOverlay = defineAsyncComponent(() => import("./SensorOfflineOverlay.vue"));
 
 const props = defineProps<{
   kind: StallKind;

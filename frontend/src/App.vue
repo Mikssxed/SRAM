@@ -21,7 +21,7 @@ const { states } = useOccupancyState(derived);
 </script>
 
 <template>
-  <div
+  <main
     class="min-h-screen bg-linear-to-b from-bg-elevated to-bg-base text-content font-sans px-4 sm:px-8 pb-16 pt-7"
   >
     <div class="max-w-300 mx-auto flex flex-col gap-5 sm:gap-6">
@@ -60,5 +60,5 @@ const { states } = useOccupancyState(derived);
         />
       </div>
     </div>
-  </div>
+  </main>
 </template>

@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -9,7 +8,7 @@
   --color-edge: #22324f;
   --color-content: #e8eef9;
   --color-content-dim: #8a9ab5;
-  --color-content-mute: #5a6b87;
+  --color-content-mute: #7a8fac;
   --color-live-green: #3ddc84;
   --color-live-green-deep: #1ea968;
   --color-live-red: #ff5a4e;
