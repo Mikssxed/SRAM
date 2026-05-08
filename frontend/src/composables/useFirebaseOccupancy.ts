@@ -51,6 +51,15 @@ export function useFirebaseOccupancy() {
   let unsubscribeHealthcheck: (() => void) | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
+  function handleOffline() {
+    isError.value = true;
+    sensorOffline.value = true;
+  }
+
+  async function handleOnline() {
+    await initialLoad();
+  }
+
   async function initialLoad() {
     try {
       const [historySnap, currentSnap, healthSnap] = await Promise.all([
@@ -132,6 +141,11 @@ export function useFirebaseOccupancy() {
     );
 
     heartbeatTimer = setInterval(updateSensorOffline, 30_000);
+
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+
+    if (!navigator.onLine) handleOffline();
   });
 
   onUnmounted(() => {
@@ -139,6 +153,8 @@ export function useFirebaseOccupancy() {
     unsubscribeCurrent?.();
     unsubscribeHealthcheck?.();
     if (heartbeatTimer !== null) clearInterval(heartbeatTimer);
+    window.removeEventListener("offline", handleOffline);
+    window.removeEventListener("online", handleOnline);
   });
 
   return {
