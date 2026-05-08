@@ -51,5 +51,6 @@ ESP32 pin GND   → HC-SR04 pin GND
 [https://github.com/msern]
 [https://github.com/mmoszczenski]
 [https://github.com/dofranko]
+[https://github.com/Mikssxed]
 
 Built with ❤️ during a 3-day hackathon.
