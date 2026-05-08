@@ -7,7 +7,7 @@ import { useFirebaseOccupancy } from "./composables/useFirebaseOccupancy";
 import { useOccupancyState } from "./composables/useOccupancyState";
 import { deriveAll } from "./utils/sensorCalc";
 
-const { entries, currentOccupied, currentLastChangedAt, isError, sensorOffline } =
+const { entries, currentOccupied, currentLastChangedAt, isError, sensorOffline, isOffline } =
   useFirebaseOccupancy();
 
 const derived = computed(() => ({
@@ -50,6 +50,7 @@ const { states } = useOccupancyState(derived);
           :state="states.male"
           :busy-hours="derived.busyHours"
           :sensor-offline="sensorOffline"
+          :is-offline="isOffline"
         />
         <StallCard
           kind="female"

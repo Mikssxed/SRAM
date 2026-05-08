@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from "vue";
 import { PLAYFUL_COPY } from "../../constants/copyConstants";
 import type { StallKind, StallState } from "../../types/stall";
 import { formatDuration } from "../../utils/time";
@@ -7,9 +14,18 @@ import BusyHoursChart from "./BusyHoursChart.vue";
 import GenderGlyph from "./GenderGlyph.vue";
 import StatusPill from "./StatusPill.vue";
 
-const ComingSoonOverlay = defineAsyncComponent(() => import("./ComingSoonOverlay.vue"));
-const NightModeOverlay = defineAsyncComponent(() => import("./NightModeOverlay.vue"));
-const SensorOfflineOverlay = defineAsyncComponent(() => import("./SensorOfflineOverlay.vue"));
+const ComingSoonOverlay = defineAsyncComponent(
+  () => import("./ComingSoonOverlay.vue"),
+);
+const NightModeOverlay = defineAsyncComponent(
+  () => import("./NightModeOverlay.vue"),
+);
+const SensorOfflineOverlay = defineAsyncComponent(
+  () => import("./SensorOfflineOverlay.vue"),
+);
+const NoInternetOverlay = defineAsyncComponent(
+  () => import("./NoInternetOverlay.vue"),
+);
 
 const props = defineProps<{
   kind: StallKind;
@@ -18,6 +34,7 @@ const props = defineProps<{
   busyHours: number[];
   comingSoon?: boolean;
   sensorOffline?: boolean;
+  isOffline?: boolean;
 }>();
 
 const emit = defineEmits<{ "toggle-notify": [] }>();
@@ -91,6 +108,7 @@ const accentClasses = computed(() =>
 const overlayComponent = computed(() => {
   if (props.comingSoon) return ComingSoonOverlay;
   if (sleeping.value) return NightModeOverlay;
+  if (props.isOffline) return NoInternetOverlay;
   if (props.sensorOffline) return SensorOfflineOverlay;
   return null;
 });

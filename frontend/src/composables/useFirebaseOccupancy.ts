@@ -33,6 +33,7 @@ export function useFirebaseOccupancy() {
   const isLoading = vueRef(true);
   const isError = vueRef(false);
   const sensorOffline = vueRef(false);
+  const isOffline = vueRef(!navigator.onLine);
   const lastTs = vueRef<number | undefined>(undefined);
   const heartbeatLastSeen = vueRef<number | null>(null);
 
@@ -52,11 +53,12 @@ export function useFirebaseOccupancy() {
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   function handleOffline() {
+    isOffline.value = true;
     isError.value = true;
-    sensorOffline.value = true;
   }
 
   async function handleOnline() {
+    isOffline.value = false;
     await initialLoad();
   }
 
@@ -145,7 +147,10 @@ export function useFirebaseOccupancy() {
     window.addEventListener("offline", handleOffline);
     window.addEventListener("online", handleOnline);
 
-    if (!navigator.onLine) handleOffline();
+    if (!navigator.onLine) {
+      isOffline.value = true;
+      isError.value = true;
+    }
   });
 
   onUnmounted(() => {
@@ -164,5 +169,6 @@ export function useFirebaseOccupancy() {
     isLoading,
     isError,
     sensorOffline,
+    isOffline,
   };
 }
