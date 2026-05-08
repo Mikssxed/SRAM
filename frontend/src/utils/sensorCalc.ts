@@ -1,5 +1,11 @@
 import type { OccupancyEntry } from "../types/sensor";
 
+export interface SittingRecord {
+  rank: number;
+  durationMs: number;
+  startedAt: number;
+}
+
 export interface DerivedStats {
   occupied: boolean;
   lastChangedAt: number; // unix ms — when the current state began
@@ -7,6 +13,7 @@ export interface DerivedStats {
   avgDurationSec: number; // average of completed visits only
   peakHour: number; // 0–23
   busyHours: number[]; // 24-element: visit starts per hour
+  topSittings: SittingRecord[]; // top 10 longest completed sittings, sorted by duration desc
 }
 
 export function deriveAll(entries: OccupancyEntry[]): DerivedStats {
@@ -17,6 +24,7 @@ export function deriveAll(entries: OccupancyEntry[]): DerivedStats {
     avgDurationSec: 0,
     peakHour: 0,
     busyHours: new Array<number>(24).fill(0),
+    topSittings: [],
   });
 
   if (entries.length === 0) return empty();
@@ -32,6 +40,7 @@ export function deriveAll(entries: OccupancyEntry[]): DerivedStats {
   });
 
   const busyHours = new Array<number>(24).fill(0);
+  const completedSittings: { durationMs: number; startedAt: number }[] = [];
   let completedCount = 0;
   let totalDurationMs = 0;
   let currentStart: number | null = null;
@@ -47,8 +56,10 @@ export function deriveAll(entries: OccupancyEntry[]): DerivedStats {
       lastChangedAt = entry.timestamp;
     } else if (!entry.occupied && currentOccupied && currentStart !== null) {
       // occupied → free: close the visit
+      const durationMs = entry.timestamp - currentStart;
       completedCount++;
-      totalDurationMs += entry.timestamp - currentStart;
+      totalDurationMs += durationMs;
+      completedSittings.push({ durationMs, startedAt: currentStart });
       busyHours[new Date(currentStart).getHours()]++;
       currentStart = null;
       currentOccupied = false;
@@ -71,6 +82,11 @@ export function deriveAll(entries: OccupancyEntry[]): DerivedStats {
     }
   }
 
+  const topSittings: SittingRecord[] = completedSittings
+    .sort((a, b) => b.durationMs - a.durationMs)
+    .slice(0, 10)
+    .map((s, i) => ({ ...s, rank: i + 1 }));
+
   return {
     occupied: currentOccupied,
     lastChangedAt,
@@ -81,5 +97,6 @@ export function deriveAll(entries: OccupancyEntry[]): DerivedStats {
         : 0,
     peakHour,
     busyHours,
+    topSittings,
   };
 }

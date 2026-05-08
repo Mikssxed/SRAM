@@ -4,6 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/vue";
 import { computed } from "vue";
 import AppHeader from "./components/layout/AppHeader.vue";
 import AppLoadingOverlay from "./components/layout/AppLoadingOverlay.vue";
+import LeaderboardSection from "./components/leaderboard/LeaderboardSection.vue";
 import StallCard from "./components/stall/StallCard.vue";
 import TopStats from "./components/stats/TopStats.vue";
 import { useFirebaseOccupancy } from "./composables/useFirebaseOccupancy";
@@ -74,6 +75,8 @@ const { states } = useOccupancyState(derived);
           :busy-hours="Array(24).fill(0)"
         />
       </div>
+
+      <LeaderboardSection :sittings="derived.topSittings" />
     </div>
   </main>
 </template>
