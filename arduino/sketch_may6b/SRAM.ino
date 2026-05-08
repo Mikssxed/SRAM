@@ -47,7 +47,7 @@ RTC_DATA_ATTR int nightSleepMin = NIGHT_SLEEP_MINUTES;
 RTC_DATA_ATTR int heartbeatInterval = HEARTBEAT_INTERVAL;
 RTC_DATA_ATTR int numSamples = 5;
 RTC_DATA_ATTR int freeConsecutive = 0;  // consecutive FREE cycles (hold timer)
-#define FREE_HOLD_CYCLES 2              // require N consecutive FREE readings to flip
+RTC_DATA_ATTR int freeHoldCycles = 2;   // require N consecutive FREE readings to flip
 const int MAX_RETRIES = 3;
 
 // ==========================================
@@ -115,6 +115,13 @@ void fetchConfig() {
       if (val >= 3 && val <= 15) { numSamples = val; }
     }
 
+    // Parse free_hold_cycles
+    idx = payload.indexOf("\"free_hold_cycles\":");
+    if (idx >= 0) {
+      int val = payload.substring(idx + 19).toInt();
+      if (val >= 1 && val <= 20) { freeHoldCycles = val; }
+    }
+
     // Parse reboot flag
     idx = payload.indexOf("\"reboot\":true");
     if (idx >= 0) {
@@ -134,7 +141,8 @@ void fetchConfig() {
     Serial.print(" night="); Serial.print(nightStartHour);
     Serial.print("-"); Serial.print(nightEndHour);
     Serial.print(" hb="); Serial.print(heartbeatInterval);
-    Serial.print(" samples="); Serial.println(numSamples);
+    Serial.print(" samples="); Serial.print(numSamples);
+    Serial.print(" freeHold="); Serial.println(freeHoldCycles);
   } else {
     Serial.print("Config fetch failed: "); Serial.println(httpCode);
   }
@@ -326,7 +334,7 @@ void setup() {
   } else if (previousState && !voteSaysOccupied) {
     // Was occupied, votes say free -> increment hold counter
     freeConsecutive++;
-    if (freeConsecutive >= FREE_HOLD_CYCLES) {
+    if (freeConsecutive >= freeHoldCycles) {
       occupied = false; // Confirmed free after N consecutive cycles
       freeConsecutive = 0;
     }
