@@ -12,6 +12,7 @@ import {
 } from "firebase/database";
 import { onMounted, onUnmounted, ref as vueRef } from "vue";
 import type { OccupancyEntry } from "../types/sensor";
+import { startOfToday } from "../utils/time";
 
 const app = initializeApp({
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string,
@@ -24,12 +25,6 @@ const db = getDatabase(app);
 const historyRef = ref(db, "restrooms/men1/history");
 const currentRef = ref(db, "restrooms/men1/current");
 const healthcheckRef = ref(db, "restrooms/men1/heartbeat");
-
-function startOfToday(): number {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
 
 export function useFirebaseOccupancy() {
   const entries = vueRef<OccupancyEntry[]>([]);
@@ -96,6 +91,7 @@ export function useFirebaseOccupancy() {
     await initialLoad();
 
     const since = lastTs.value !== undefined ? lastTs.value + 1 : Date.now();
+
     unsubscribeHistory = onChildAdded(
       query(historyRef, orderByChild("timestamp"), startAt(since)),
       (snap: DataSnapshot) => {

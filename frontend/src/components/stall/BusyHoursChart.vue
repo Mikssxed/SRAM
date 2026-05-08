@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 interface Bar {
   heightPct: number;
@@ -11,7 +11,19 @@ const props = defineProps<{
   occupied: boolean;
 }>();
 
-const currentHour = computed(() => new Date().getHours());
+const currentHour = ref(new Date().getHours());
+
+let hourInterval: ReturnType<typeof setInterval>;
+
+onMounted(() => {
+  hourInterval = setInterval(() => {
+    currentHour.value = new Date().getHours();
+  }, 60_000);
+});
+
+onUnmounted(() => {
+  clearInterval(hourInterval);
+});
 
 const maxValue = computed(() => Math.max(...props.data));
 

@@ -1,3 +1,9 @@
+export function startOfToday(): number {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
 export function formatDuration(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
   const ss = totalSeconds % 60;
