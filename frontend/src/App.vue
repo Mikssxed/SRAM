@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import AppFooter from "./components/layout/AppFooter.vue";
 import AppHeader from "./components/layout/AppHeader.vue";
 import StallCard from "./components/stall/StallCard.vue";
 import TopStats from "./components/stats/TopStats.vue";
@@ -8,7 +7,7 @@ import { useFirebaseOccupancy } from "./composables/useFirebaseOccupancy";
 import { useOccupancyState } from "./composables/useOccupancyState";
 import { deriveAll } from "./utils/sensorCalc";
 
-const { entries, currentOccupied, currentLastChangedAt, isError } =
+const { entries, currentOccupied, currentLastChangedAt, isError, sensorOffline } =
   useFirebaseOccupancy();
 
 const derived = computed(() => ({
@@ -49,16 +48,16 @@ const { states } = useOccupancyState(derived);
           label="Men's Room"
           :state="states.male"
           :busy-hours="derived.busyHours"
+          :sensor-offline="sensorOffline"
         />
         <StallCard
           kind="female"
           label="Women's Room"
           :state="states.female"
           :coming-soon="true"
+          :busy-hours="Array(24).fill(0)"
         />
       </div>
-
-      <AppFooter />
     </div>
   </div>
 </template>

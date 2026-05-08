@@ -29,7 +29,7 @@ const stats = computed<StatItem[]>(() => [
     colorClass: "text-content",
   },
   {
-    label: "AVG DURATION",
+    label: "AVG DURATION · TODAY",
     value: props.derived.visitsToday
       ? formatDuration(props.derived.avgDurationSec)
       : "--:--",

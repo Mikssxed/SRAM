@@ -80,6 +80,19 @@ body {
   );
 }
 
+.signal-static {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--color-live-red) 0 4px,
+    transparent 4px 12px
+  ),
+  repeating-linear-gradient(
+    -45deg,
+    var(--color-live-red) 0 4px,
+    transparent 4px 12px
+  );
+}
+
 .glow-gradient-red {
   background: radial-gradient(
     70% 50% at 80% 0%,

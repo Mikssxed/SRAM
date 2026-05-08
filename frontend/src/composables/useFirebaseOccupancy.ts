@@ -23,6 +23,13 @@ const app = initializeApp({
 const db = getDatabase(app);
 const historyRef = ref(db, "restrooms/men1/history");
 const currentRef = ref(db, "restrooms/men1/current");
+const healthcheckRef = ref(db, "restrooms/men1/heartbeat");
+
+function startOfToday(): number {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
 
 export function useFirebaseOccupancy() {
   const entries = vueRef<OccupancyEntry[]>([]);
@@ -30,16 +37,33 @@ export function useFirebaseOccupancy() {
   const currentLastChangedAt = vueRef(Date.now());
   const isLoading = vueRef(true);
   const isError = vueRef(false);
+  const sensorOffline = vueRef(false);
   const lastTs = vueRef<number | undefined>(undefined);
+  const heartbeatLastSeen = vueRef<number | null>(null);
+
+  const HEARTBEAT_STALE_MS = 3 * 60 * 1000;
+
+  function updateSensorOffline() {
+    const stale =
+      heartbeatLastSeen.value === null ||
+      Date.now() - heartbeatLastSeen.value > HEARTBEAT_STALE_MS;
+    sensorOffline.value = stale;
+    isError.value = stale;
+  }
 
   let unsubscribeHistory: (() => void) | null = null;
   let unsubscribeCurrent: (() => void) | null = null;
+  let unsubscribeHealthcheck: (() => void) | null = null;
+  let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   async function initialLoad() {
     try {
-      const [historySnap, currentSnap] = await Promise.all([
-        get(query(historyRef, orderByChild("timestamp"))),
+      const [historySnap, currentSnap, healthSnap] = await Promise.all([
+        get(
+          query(historyRef, orderByChild("timestamp"), startAt(startOfToday())),
+        ),
         get(currentRef),
+        get(healthcheckRef),
       ]);
 
       const sorted: OccupancyEntry[] = [];
@@ -59,7 +83,8 @@ export function useFirebaseOccupancy() {
 
       lastTs.value = last?.timestamp;
 
-      isError.value = false;
+      heartbeatLastSeen.value = healthSnap.val()?.last_seen ?? null;
+      updateSensorOffline();
     } catch {
       isError.value = true;
     } finally {
@@ -98,12 +123,34 @@ export function useFirebaseOccupancy() {
         isError.value = true;
       },
     );
+
+    unsubscribeHealthcheck = onValue(
+      healthcheckRef,
+      (snap: DataSnapshot) => {
+        heartbeatLastSeen.value = snap.val()?.last_seen ?? null;
+        updateSensorOffline();
+      },
+      () => {
+        isError.value = true;
+      },
+    );
+
+    heartbeatTimer = setInterval(updateSensorOffline, 30_000);
   });
 
   onUnmounted(() => {
     unsubscribeHistory?.();
     unsubscribeCurrent?.();
+    unsubscribeHealthcheck?.();
+    if (heartbeatTimer !== null) clearInterval(heartbeatTimer);
   });
 
-  return { entries, currentOccupied, currentLastChangedAt, isLoading, isError };
+  return {
+    entries,
+    currentOccupied,
+    currentLastChangedAt,
+    isLoading,
+    isError,
+    sensorOffline,
+  };
 }

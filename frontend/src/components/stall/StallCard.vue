@@ -7,14 +7,16 @@ import BusyHoursChart from "./BusyHoursChart.vue";
 import ComingSoonOverlay from "./ComingSoonOverlay.vue";
 import GenderGlyph from "./GenderGlyph.vue";
 import NightModeOverlay from "./NightModeOverlay.vue";
+import SensorOfflineOverlay from "./SensorOfflineOverlay.vue";
 import StatusPill from "./StatusPill.vue";
 
 const props = defineProps<{
   kind: StallKind;
   label: string;
   state: StallState;
-  busyHours?: number[];
+  busyHours: number[];
   comingSoon?: boolean;
+  sensorOffline?: boolean;
 }>();
 
 const emit = defineEmits<{ "toggle-notify": [] }>();
@@ -30,7 +32,7 @@ onMounted(() => {
 
 onUnmounted(() => clearInterval(hourTimer));
 
-const sleeping = computed(() => hour.value >= 20 || hour.value < 6);
+const sleeping = computed(() => hour.value >= 18 || hour.value < 6);
 
 const tickedDuration = ref(props.state.duration);
 let durationTimer: ReturnType<typeof setInterval>;
@@ -88,6 +90,7 @@ const accentClasses = computed(() =>
 const overlayComponent = computed(() => {
   if (props.comingSoon) return ComingSoonOverlay;
   if (sleeping.value) return NightModeOverlay;
+  if (props.sensorOffline) return SensorOfflineOverlay;
   return null;
 });
 </script>
@@ -154,6 +157,6 @@ const overlayComponent = computed(() => {
       </div>
     </div>
     <!-- Busy hours chart -->
-    <BusyHoursChart v-if="busyHours" :data="busyHours" :occupied="occupied" />
+    <BusyHoursChart :data="busyHours" :occupied="occupied" />
   </div>
 </template>

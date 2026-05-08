@@ -13,9 +13,17 @@ defineProps<{ isError?: boolean }>();
       >
         🚽
       </div>
-      <div class="flex flex-col leading-none">
+      <div class="flex flex-col leading-none gap-0.5">
         <span class="text-lg font-extrabold text-content tracking-[-0.3px]">
           <span class="text-live-green">SRAM</span>
+        </span>
+        <span
+          class="text-[10px] font-medium text-content-dim tracking-wide leading-none"
+        >
+          <span class="text-live-green">S</span>mart
+          <span class="text-live-green"> R</span>estroom
+          <span class="text-live-green"> A</span>vailability
+          <span class="text-live-green"> M</span>onitor
         </span>
       </div>
     </div>
