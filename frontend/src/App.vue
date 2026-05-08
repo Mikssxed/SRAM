@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import AppHeader from "./components/layout/AppHeader.vue";
+import AppLoadingOverlay from "./components/layout/AppLoadingOverlay.vue";
 import StallCard from "./components/stall/StallCard.vue";
 import TopStats from "./components/stats/TopStats.vue";
 import { useFirebaseOccupancy } from "./composables/useFirebaseOccupancy";
 import { useOccupancyState } from "./composables/useOccupancyState";
 import { deriveAll } from "./utils/sensorCalc";
 
-const { entries, currentOccupied, currentLastChangedAt, isError, sensorOffline, isOffline } =
+const { entries, currentOccupied, currentLastChangedAt, isLoading, isError, sensorOffline, isOffline } =
   useFirebaseOccupancy();
 
 const derived = computed(() => ({
@@ -21,6 +22,9 @@ const { states } = useOccupancyState(derived);
 </script>
 
 <template>
+  <Transition name="fade">
+    <AppLoadingOverlay v-if="isLoading" />
+  </Transition>
   <main
     class="min-h-screen bg-linear-to-b from-bg-elevated to-bg-base text-content font-sans px-4 sm:px-8 pb-16 pt-7"
   >
